@@ -40,6 +40,8 @@ void main(List<String> arguments) {
     }
     var nilaiList = setNilai1.toList();
     print(nilaiList[1]);
+
+    
 }
 
 
