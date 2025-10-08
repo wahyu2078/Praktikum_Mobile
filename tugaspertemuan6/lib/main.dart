@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'pages/profile_page.dart';
+import 'pages/counter_page.dart'; 
 
 void main() {
   runApp(const MyApp());
@@ -11,7 +11,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = ColorScheme.fromSeed(
-      seedColor: const Color(0xFF0F766E), // teal-ish
+      seedColor: const Color(0xFF0F766E),
       brightness: Brightness.light,
     );
 
@@ -22,44 +22,7 @@ class MyApp extends StatelessWidget {
         colorScheme: colorScheme,
         useMaterial3: true,
       ),
-      home: const HomeShell(),
-    );
-  }
-}
-
-class HomeShell extends StatefulWidget {
-  const HomeShell({super.key});
-
-  @override
-  State<HomeShell> createState() => _HomeShellState();
-}
-
-class _HomeShellState extends State<HomeShell> {
-  int _index = 0;
-
-  final List<Widget> _pages = const [
-    ProfilePage(), // StatelessWidget
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    // Root Scaffold hanya untuk bottom navigation; tiap halaman punya Scaffold + AppBar sendiri
-    return Scaffold(
-      body: IndexedStack(
-        index: _index,
-        children: _pages,
-      ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _index,
-        onDestinationSelected: (i) => setState(() => _index = i),
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person),
-            label: 'Profil',
-          ),
-        ],
-      ),
+      home: const CounterPage(),
     );
   }
 }
