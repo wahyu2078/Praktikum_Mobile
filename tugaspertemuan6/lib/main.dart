@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'pages/profile_page.dart';
+import 'pages/counter_page.dart'; 
 
 void main() {
   runApp(const MyApp());
@@ -11,7 +11,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = ColorScheme.fromSeed(
-      seedColor: const Color(0xFF0F766E), // teal-ish
+      seedColor: const Color(0xFF0F766E),
       brightness: Brightness.light,
     );
 
@@ -22,7 +22,7 @@ class MyApp extends StatelessWidget {
         colorScheme: colorScheme,
         useMaterial3: true,
       ),
-      home: const ProfilePage(),
+      home: const CounterPage(),
     );
   }
 }
