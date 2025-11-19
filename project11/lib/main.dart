@@ -107,6 +107,22 @@ class _MyAppState extends State<MyApp> {
                   ],
                 ),
               ),
+
+              TextField(
+                onChanged: updateName,
+                decoration: InputDecoration(
+                  labelText: 'Ubah Nama',
+                  labelStyle: TextStyle(color: settings.textColor),
+                  border: OutlineInputBorder(),
+                  filled: true,
+                  fillColor: settings.isDarkMode
+                      ? Colors.grey[800]
+                      : Colors.grey[100],
+                ),
+                style: TextStyle(color: settings.textColor),
+              ),
+
+              SizedBox(height: 20),
             ],
           ),
         ),
