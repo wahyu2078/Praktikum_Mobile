@@ -1,262 +1,255 @@
-import 'dart:io';
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
 
-// FileService
 class FileService {
-  Future<Directory> get documentsDirectory async {
-    return await getApplicationDocumentsDirectory();
-  }
+  Future<Directory> get directory async => await getApplicationDocumentsDirectory();
 
-  Future<File> writeFile(String fileName, String content) async {
-    final dir = await documentsDirectory;
+  Future<File> write(String fileName, String content) async {
+    final dir = await directory;
     final file = File(path.join(dir.path, fileName));
     return file.writeAsString(content);
   }
 
-  Future<String> readFile(String fileName) async {
+  Future<String> read(String fileName) async {
     try {
-      final dir = await documentsDirectory;
+      final dir = await directory;
       final file = File(path.join(dir.path, fileName));
       return await file.readAsString();
-    } catch (_) {
-      return '';
-    }
-  }
-
-  Future<File> writeJson(String fileName, Map<String, dynamic> json) async {
-    return writeFile(fileName, jsonEncode(json));
-  }
-
-  Future<Map<String, dynamic>> readJson(String fileName) async {
-    try {
-      final content = await readFile(fileName);
-      return jsonDecode(content);
-    } catch (_) {
-      return {};
-    }
-  }
-
-  Future<bool> fileExists(String fileName) async {
-    final dir = await documentsDirectory;
-    final file = File(path.join(dir.path, fileName));
-    return file.exists();
-  }
-
-  Future<void> deleteFile(String fileName) async {
-    try {
-      final dir = await documentsDirectory;
-      final file = File(path.join(dir.path, fileName));
-      if (await file.exists()) {
-        await file.delete();
-      }
     } catch (e) {
-      print("Delete error: $e");
+      return "";
     }
+  }
+
+  Future<bool> exists(String fileName) async {
+    final dir = await directory;
+    final file = File(path.join(dir.path, fileName));
+    return await file.exists();
+  }
+
+  Future<void> delete(String fileName) async {
+    final dir = await directory;
+    final file = File(path.join(dir.path, fileName));
+    if (await file.exists()) await file.delete();
   }
 }
 
-// UserDataService
-class UserDataService {
-  final FileService _fileService = FileService();
-  final String _fileName = 'user_data.json';
+class DirectoryService {
+  final FileService fileService = FileService();
 
-  Future<void> saveUserData({
-    required String name,
-    required String email,
-    int? age,
+  Future<Directory> create(String dirName) async {
+    final appDir = await fileService.directory;
+    final newDir = Directory(path.join(appDir.path, dirName));
+    if (!await newDir.exists()) await newDir.create(recursive: true);
+    return newDir;
+  }
+}
+
+class NoteService {
+  final DirectoryService dirService = DirectoryService();
+  final String notesDir = 'notes';
+
+  Future<void> saveNote({
+    required String title,
+    required String content,
   }) async {
+    final dir = await dirService.create(notesDir);
+    final fileName = '${DateTime.now().millisecondsSinceEpoch}.json';
+    final file = File(path.join(dir.path, fileName));
+
     final data = {
-      'name': name,
-      'email': email,
-      'age': age ?? 0,
-      'last_update': DateTime.now().toIso8601String(),
+      'title': title,
+      'content': content,
+      'created_at': DateTime.now().toIso8601String(),
     };
 
-    await _fileService.writeJson(_fileName, data);
+    await file.writeAsString(jsonEncode(data));
   }
 
-  Future<Map<String, dynamic>?> readUserData() async {
-    final exists = await _fileService.fileExists(_fileName);
-    if (!exists) return null;
+  Future<List<Map<String, dynamic>>> getNotes() async {
+    final dir = await dirService.create(notesDir);
+    final files = dir.listSync();
+    List<Map<String, dynamic>> notes = [];
 
-    final data = await _fileService.readJson(_fileName);
-    return data.isNotEmpty ? data : null;
+    for (var f in files) {
+      if (f is File && f.path.endsWith(".json")) {
+        final content = await f.readAsString();
+        final data = jsonDecode(content);
+        data['file_path'] = f.path;
+        notes.add(data);
+      }
+    }
+
+    notes.sort((a, b) => b['created_at'].compareTo(a['created_at']));
+    return notes;
   }
 
-  Future<void> deleteUserData() async {
-    await _fileService.deleteFile(_fileName);
-  }
-
-  Future<bool> hasUserData() async {
-    return await _fileService.fileExists(_fileName);
+  Future<void> deleteByPath(String pathFile) async {
+    final file = File(pathFile);
+    if (await file.exists()) await file.delete();
   }
 }
 
-// MAIN
-void main() {
-  runApp(MyApp());
-}
+void main() => runApp(NotesApp());
 
-// MyApp
-class MyApp extends StatelessWidget {
+class NotesApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'User Data JSON Demo',
-      theme: ThemeData(primarySwatch: Colors.teal),
-      home: UserProfilePage(),
+      title: 'Notes App',
+      theme: ThemeData(primarySwatch: Colors.indigo),
+      home: NotesPage(),
     );
   }
 }
 
-// UserProfilePage
-class UserProfilePage extends StatefulWidget {
+class NotesPage extends StatefulWidget {
   @override
-  UserProfilePageState createState() => UserProfilePageState();
+  NotesPageState createState() => NotesPageState();
 }
 
-class UserProfilePageState extends State<UserProfilePage> {
-  final UserDataService _userService = UserDataService();
-
-  final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _ageController = TextEditingController();
-
-  Map<String, dynamic>? _savedData;
+class NotesPageState extends State<NotesPage> {
+  final NoteService noteService = NoteService();
+  List<Map<String, dynamic>> notes = [];
 
   @override
   void initState() {
     super.initState();
-    _loadUserData();
+    loadNotes();
   }
 
-  Future<void> _loadUserData() async {
-    final data = await _userService.readUserData();
-    setState(() => _savedData = data);
+  Future<void> loadNotes() async {
+    final data = await noteService.getNotes();
+    setState(() => notes = data);
   }
 
-  Future<void> _saveUserData() async {
-    await _userService.saveUserData(
-      name: _nameController.text.trim(),
-      email: _emailController.text.trim(),
-      age: int.tryParse(_ageController.text),
+  Future<void> addNote() async {
+    final ok = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => AddNotePage()),
     );
-
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('Data berhasil disimpan')));
-
-    await _loadUserData();
+    if (ok == true) loadNotes();
   }
 
-  Future<void> _deleteUserData() async {
-    await _userService.deleteUserData();
-    setState(() => _savedData = null);
-
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('Data user dihapus')));
+  Future<void> deleteNote(String path) async {
+    await noteService.deleteByPath(path);
+    loadNotes();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Profil User (File JSON)")),
-      body: SingleChildScrollView(
+      appBar: AppBar(title: Text('My Notes')),
+      body: notes.isEmpty
+          ? Center(child: Text("Belum ada catatan."))
+          : ListView.builder(
+              itemCount: notes.length,
+              itemBuilder: (context, i) {
+                final n = notes[i];
+                return Card(
+                  margin: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  child: ListTile(
+                    title: Text(n['title']),
+                    subtitle: Text(
+                      n['content'],
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    trailing: IconButton(
+                      icon: Icon(Icons.delete, color: Colors.red),
+                      onPressed: () => deleteNote(n['file_path']),
+                    ),
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => NoteDetailPage(note: n),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: addNote,
+        child: Icon(Icons.add),
+      ),
+    );
+  }
+}
+
+class AddNotePage extends StatefulWidget {
+  @override
+  AddNotePageState createState() => AddNotePageState();
+}
+
+class AddNotePageState extends State<AddNotePage> {
+  final NoteService noteService = NoteService();
+  final titleCtrl = TextEditingController();
+  final contentCtrl = TextEditingController();
+
+  Future<void> save() async {
+    if (titleCtrl.text.isEmpty || contentCtrl.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Isi semua field!")),
+      );
+      return;
+    }
+
+    await noteService.saveNote(
+      title: titleCtrl.text,
+      content: contentCtrl.text,
+    );
+
+    Navigator.pop(context, true);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('Catatan Baru')),
+      body: Padding(
         padding: EdgeInsets.all(16),
         child: Column(
           children: [
             TextField(
-              controller: _nameController,
-              decoration: InputDecoration(
-                labelText: "Nama",
-                border: OutlineInputBorder(),
-              ),
+              controller: titleCtrl,
+              decoration: InputDecoration(labelText: 'Judul'),
             ),
             SizedBox(height: 10),
-            TextField(
-              controller: _emailController,
-              decoration: InputDecoration(
-                labelText: "Email",
-                border: OutlineInputBorder(),
+            Expanded(
+              child: TextField(
+                controller: contentCtrl,
+                expands: true,
+                maxLines: null,
+                decoration: InputDecoration(labelText: 'Isi Catatan'),
               ),
-            ),
-            SizedBox(height: 10),
-            TextField(
-              controller: _ageController,
-              decoration: InputDecoration(
-                labelText: "Usia",
-                border: OutlineInputBorder(),
-              ),
-              keyboardType: TextInputType.number,
             ),
             SizedBox(height: 20),
-
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                ElevatedButton.icon(
-                  icon: Icon(Icons.save),
-                  label: Text("Simpan"),
-                  onPressed: _saveUserData,
-                ),
-                ElevatedButton.icon(
-                  icon: Icon(Icons.delete),
-                  label: Text("Hapus"),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.redAccent,
-                  ),
-                  onPressed: _deleteUserData,
-                ),
-              ],
-            ),
-
-            SizedBox(height: 30),
-            Divider(),
-
-            _savedData == null
-                ? Text(
-                    "Belum ada data tersimpan.",
-                    style: TextStyle(color: Colors.grey),
-                  )
-                : Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "Data Tersimpan:",
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.teal,
-                        ),
-                      ),
-                      SizedBox(height: 8),
-                      _buildDataRow("Nama", _savedData!['name']),
-                      _buildDataRow("Email", _savedData!['email']),
-                      _buildDataRow("Usia", _savedData!['age'].toString()),
-                      _buildDataRow(
-                        "Update Terakhir",
-                        _savedData!['last_update'],
-                      ),
-                    ],
-                  ),
+            ElevatedButton.icon(
+              onPressed: save,
+              icon: Icon(Icons.save),
+              label: Text("Simpan"),
+            )
           ],
         ),
       ),
     );
   }
+}
 
-  Widget _buildDataRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          Text("$label: ", style: TextStyle(fontWeight: FontWeight.bold)),
-          Expanded(child: Text(value)),
-        ],
+class NoteDetailPage extends StatelessWidget {
+  final Map<String, dynamic> note;
+  const NoteDetailPage({required this.note});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text(note['title'])),
+      body: Padding(
+        padding: EdgeInsets.all(16),
+        child: Text(note['content']),
       ),
     );
   }
