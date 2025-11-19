@@ -84,6 +84,29 @@ class _MyAppState extends State<MyApp> {
                   fontWeight: FontWeight.bold,
                 ),
               ),
+              Container(
+                padding: EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: settings.isDarkMode
+                      ? Colors.blueGrey[700]
+                      : Colors.blue[100],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Dark Mode',
+                      style: TextStyle(fontSize: 18, color: settings.textColor),
+                    ),
+                    Switch(
+                      value: settings.isDarkMode,
+                      onChanged: (value) => toggleDarkMode(),
+                      activeColor: Colors.blue,
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
