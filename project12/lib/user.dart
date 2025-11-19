@@ -1,44 +1,95 @@
-import 'package:json_annotation/json_annotation.dart';
-
-part 'user.g.dart';
-
-@JsonSerializable(explicitToJson: true, anyMap: true)
 class User {
-  @JsonKey(required: true, disallowNullValue: true)
-  final int id;
+  final int? id;
+  final String? name;
+  final String? email;
+  final DateTime? createdAt;
 
-  @JsonKey(required: true, disallowNullValue: true)
-  final String name;
+  User({this.id, this.name, this.email, this.createdAt});
 
-  @JsonKey(required: true, disallowNullValue: true)
-  final String email;
+  // Factory: JSON → Object
+  factory User.fromJson(Map<String, dynamic> json) {
+    return User(
+      id: _parseInt(json['id']),
+      name: _parseString(json['name']),
+      email: _parseString(json['email']),
+      createdAt: _parseDateTime(
+        json['created_at'] ?? json['createdAt'], // support dua format
+      ),
+    );
+  }
 
-  @JsonKey(
-    name: 'created_at',
-    required: true,
-    disallowNullValue: true,
-    fromJson: parseDateTime,
-    toJson: dateTimeToJson,
-  )
-  final DateTime createdAt;
+  // Object → JSON
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'email': email,
+      'created_at': createdAt?.toIso8601String(),
+    };
+  }
 
-  User({
-    required this.id,
-    required this.name,
-    required this.email,
-    required this.createdAt,
-  });
+  // Helper Functions
+  static int? _parseInt(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is String) return int.tryParse(value);
+    if (value is num) return value.toInt();
+    return null;
+  }
 
-  factory User.fromJson(Map<String, dynamic> json) => _$UserFromJson(json);
-  Map<String, dynamic> toJson() => _$UserToJson(this);
+  static String? _parseString(dynamic value) {
+    if (value == null) return null;
+    if (value is String) return value;
+    return value.toString();
+  }
+
+  static DateTime? _parseDateTime(dynamic value) {
+    if (value == null) return null;
+    if (value is DateTime) return value;
+
+    if (value is String) {
+      try {
+        return DateTime.parse(value);
+      } catch (e) {
+        return null; // return null jika format salah
+      }
+    }
+
+    return null;
+  }
+
+  // toString → Untuk Debugging
+  @override
+  String toString() {
+    return 'User{id: $id, name: $name, email: $email, createdAt: $createdAt}';
+  }
+
+  // copyWith → Untuk immutability
+  User copyWith({int? id, String? name, String? email, DateTime? createdAt}) {
+    return User(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      email: email ?? this.email,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  // Validasi
+  bool get isValid =>
+      id != null && name != null && name!.isNotEmpty && email != null;
+
+  // Equality Check
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is User &&
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          name == other.name &&
+          email == other.email &&
+          createdAt == other.createdAt;
+
+  @override
+  int get hashCode =>
+      id.hashCode ^ name.hashCode ^ email.hashCode ^ createdAt.hashCode;
 }
-
-// Top-level functions
-DateTime parseDateTime(dynamic value) {
-  if (value == null) return DateTime.now();
-  if (value is DateTime) return value;
-  if (value is String) return DateTime.parse(value);
-  return DateTime.now();
-}
-
-String dateTimeToJson(DateTime date) => date.toIso8601String();

@@ -3,7 +3,7 @@ import 'user.dart';
 void main() {
   print('=== DEBUG: Check JSON Structure ===');
 
-  // Object Dart ke JSON
+  // Object Dart → JSON
   User user = User(
     id: 1,
     name: 'John Doe',
@@ -17,28 +17,47 @@ void main() {
 
   print('\n=== TEST: JSON to Object ===');
 
-  // Gunakan field names yang sama dengan hasil toJson()
+  // JSON test (gunakan field yang sama / createdAt beda format)
   Map<String, dynamic> jsonData = {
     'id': 2,
     'name': 'Jane Doe',
     'email': 'jane@example.com',
-    'created_at': '2024-01-01T10:00:00.000Z',
+    'createdAt': '2024-01-01T10:00:00.000Z',
   };
 
   print('JSON data to parse: $jsonData');
   print('JSON keys: ${jsonData.keys.toList()}');
-
   print('id: ${jsonData['id']} (type: ${jsonData['id'].runtimeType})');
   print('name: ${jsonData['name']} (type: ${jsonData['name'].runtimeType})');
   print('email: ${jsonData['email']} (type: ${jsonData['email'].runtimeType})');
-  print('created_at: ${jsonData['created_at']} (type: ${jsonData['created_at'].runtimeType})');
+  print(
+    'createdAt: ${jsonData['createdAt']} (type: ${jsonData['createdAt'].runtimeType})',
+  );
 
   print('\n=== Convert JSON to User Object ===');
-  User user2 = User.fromJson(jsonData);
 
-  print('Parsed User:');
-  print('id: ${user2.id}');
-  print('name: ${user2.name}');
-  print('email: ${user2.email}');
-  print('createdAt: ${user2.createdAt}');
+  try {
+    User userFromJson = User.fromJson(jsonData);
+    print('SUCCESS: User from JSON: $userFromJson');
+  } catch (e, stack) {
+    print('❌ ERROR: $e');
+    print('Stack trace: $stack');
+  }
+
+  print('\n=== TEST: Handle Missing Fields ===');
+
+  // Test JSON tidak lengkap
+  Map<String, dynamic> incompleteJson = {
+    'id': 3,
+    // name missing
+    'email': 'test@example.com',
+    // createdAt missing
+  };
+
+  try {
+    User userFromIncomplete = User.fromJson(incompleteJson);
+    print('User from incomplete JSON: $userFromIncomplete');
+  } catch (e) {
+    print('❌ Error with incomplete JSON: $e');
+  }
 }
