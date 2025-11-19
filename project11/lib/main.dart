@@ -76,6 +76,7 @@ class _MyAppState extends State<MyApp> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              // GREETING
               Text(
                 settings.greeting,
                 style: TextStyle(
@@ -84,6 +85,10 @@ class _MyAppState extends State<MyApp> {
                   fontWeight: FontWeight.bold,
                 ),
               ),
+
+              SizedBox(height: 20),
+
+              // DARK MODE
               Container(
                 padding: EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -108,6 +113,9 @@ class _MyAppState extends State<MyApp> {
                 ),
               ),
 
+              SizedBox(height: 20),
+
+              // TEXT FIELD GANTI NAMA
               TextField(
                 onChanged: updateName,
                 decoration: InputDecoration(
@@ -123,8 +131,81 @@ class _MyAppState extends State<MyApp> {
               ),
 
               SizedBox(height: 20),
+
+              // ================================
+              //      UKURAN FONT + PREVIEW
+              // ================================
+              Container(
+                padding: EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: settings.isDarkMode
+                      ? Colors.blueGrey[800]
+                      : Colors.blue[50],
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      'Ukuran Font: ${settings.fontSize}',
+                      style: TextStyle(color: settings.textColor, fontSize: 16),
+                    ),
+
+                    SizedBox(height: 10),
+
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        IconButton(
+                          onPressed: decreaseFontSize,
+                          icon: Icon(
+                            Icons.remove_circle,
+                            color: settings.textColor,
+                          ),
+                        ),
+                        SizedBox(width: 20),
+                        IconButton(
+                          onPressed: increaseFontSize,
+                          icon: Icon(
+                            Icons.add_circle,
+                            color: settings.textColor,
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    SizedBox(height: 20),
+
+                    // PREVIEW TEXT
+                    Container(
+                      padding: EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: settings.textColor.withOpacity(0.3),
+                        ),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        'Ini adalah preview text dengan ukuran font ${settings.fontSize}',
+                        style: TextStyle(
+                          fontSize: settings.fontSize.toDouble(),
+                          color: settings.textColor,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
+        ),
+
+        floatingActionButton: FloatingActionButton(
+          onPressed: toggleDarkMode,
+          child: Icon(settings.isDarkMode ? Icons.light_mode : Icons.dark_mode),
+          backgroundColor: settings.isDarkMode
+              ? Colors.blueGrey[800]
+              : Colors.blue,
         ),
       ),
     );
